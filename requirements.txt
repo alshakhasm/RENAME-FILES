@@ -1,0 +1,13 @@
+# Date Prefix File Renamer Dependencies
+
+# Core dependencies
+tkinterdnd2>=0.3.0          # Enhanced drag-and-drop support for tkinter
+pathlib                     # Filesystem operations (built-in Python 3.11+)
+
+# Development dependencies
+pytest>=7.0.0              # Testing framework
+pytest-mock>=3.10.0        # Mocking support for tests
+pytest-cov>=4.0.0          # Coverage reporting
+
+# Optional dependencies
+docker>=6.0.0              # Docker SDK for Python (development/testing)

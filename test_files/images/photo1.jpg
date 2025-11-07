@@ -1,0 +1,9 @@
+# This represents an image file
+# In a real scenario, this would be binary data
+# For testing purposes, we're using a text placeholder
+
+Image Type: JPEG
+Resolution: 1920x1080
+Color Space: RGB
+File Size: 2.3 MB (simulated)
+Creation Date: 2025-01-21
