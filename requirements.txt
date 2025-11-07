@@ -2,7 +2,6 @@
 
 # Core dependencies
 tkinterdnd2>=0.3.0          # Enhanced drag-and-drop support for tkinter
-pathlib                     # Filesystem operations (built-in Python 3.11+)
 
 # Development dependencies
 pytest>=7.0.0              # Testing framework

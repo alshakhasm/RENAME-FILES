@@ -103,7 +103,7 @@ docker run -v /host/path:/data date-prefix-renamer cli /data/directory
 
 ❌ **Skipped:**
 - Files in subdirectories (only folders are renamed in subdirs)
-- - Files already with DDMMYYYY_ prefixes
+- Files already with DDMMYYYY_ prefixes
 - Symbolic links (for security)
 - Inaccessible files (permission errors)
 
