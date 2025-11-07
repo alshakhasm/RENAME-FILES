@@ -249,7 +249,7 @@ class SettingsDialog:
         validation_descriptions = {
             ValidationLevel.STRICT: "Strict - Maximum safety checks",
             ValidationLevel.NORMAL: "Normal - Standard validation",
-            ValidationLevel.RELAXED: "Relaxed - Minimal checks"
+            ValidationLevel.PERMISSIVE: "Permissive - Minimal checks"
         }
         
         for level in ValidationLevel:

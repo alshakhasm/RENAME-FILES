@@ -103,18 +103,32 @@ class SimpleDateRenamerGUI:
         self.preview_text.delete(1.0, tk.END)
         
         try:
-            # Get current date in DDMMYYYY format
-            today = datetime.now().strftime("%d%m%Y")
+            # Get file's actual creation/modification date
+            try:
+                stat_info = self.selected_path.stat()
+                # Use creation time on macOS (st_birthtime) or modification time as fallback
+                if hasattr(stat_info, 'st_birthtime'):
+                    file_date = datetime.fromtimestamp(stat_info.st_birthtime)
+                else:
+                    file_date = datetime.fromtimestamp(stat_info.st_mtime)
+                
+                date_prefix = file_date.strftime("%d%m%Y")
+                date_display = file_date.strftime('%Y-%m-%d')
+            except Exception:
+                # Fallback to today's date if we can't read file stats
+                date_prefix = datetime.now().strftime("%d%m%Y")
+                date_display = "today"
             
             if self.selected_path.is_file():
                 # Single file
                 old_name = self.selected_path.name
-                new_name = f"{today}_{old_name}"
+                new_name = f"{date_prefix}_{old_name}"
                 new_path = self.selected_path.parent / new_name
                 
                 self.preview_text.insert(tk.END, "FILE RENAME:\n")
                 self.preview_text.insert(tk.END, f"From: {old_name}\n")
                 self.preview_text.insert(tk.END, f"To:   {new_name}\n")
+                self.preview_text.insert(tk.END, f"Date: {date_prefix} ({date_display})\n")
                 self.preview_text.insert(tk.END, f"Location: {self.selected_path.parent}\n")
                 
                 # Store for execution
@@ -123,12 +137,13 @@ class SimpleDateRenamerGUI:
             else:
                 # Folder
                 old_name = self.selected_path.name
-                new_name = f"{today}_{old_name}"
+                new_name = f"{date_prefix}_{old_name}"
                 new_path = self.selected_path.parent / new_name
                 
                 self.preview_text.insert(tk.END, "FOLDER RENAME:\n")
                 self.preview_text.insert(tk.END, f"From: {old_name}\n")
                 self.preview_text.insert(tk.END, f"To:   {new_name}\n")
+                self.preview_text.insert(tk.END, f"Date: {date_prefix} ({date_display})\n")
                 self.preview_text.insert(tk.END, f"Location: {self.selected_path.parent}\n")
                 
                 # Store for execution

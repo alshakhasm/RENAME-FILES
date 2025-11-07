@@ -304,11 +304,10 @@ class DateExtractor(DateExtractorInterface):
         Returns:
             True if date is within valid range, False otherwise
         """
+        from datetime import timedelta
+        
         now = datetime.now()
         min_date = datetime(min_year, 1, 1)
-        max_date = now + datetime.timedelta(days=max_future_days)
-        
-        from datetime import timedelta
         max_date = now + timedelta(days=max_future_days)
         
         return min_date <= date <= max_date

@@ -246,11 +246,7 @@ class ModernDateRenamerGUI:
         self.preview_text.delete(1.0, tk.END)
         
         try:
-            # Get current date in DDMMYYYY format
-            today = datetime.now().strftime("%d%m%Y")
-            
             preview_content = f"BATCH RENAME PREVIEW\n{'=' * 50}\n\n"
-            preview_content += f"Date prefix: {today}\n"
             preview_content += f"Total items: {len(self.selected_paths)}\n\n"
             
             # Store rename plan
@@ -258,14 +254,30 @@ class ModernDateRenamerGUI:
             
             for i, path in enumerate(self.selected_paths, 1):
                 old_name = path.name
-                new_name = f"{today}_{old_name}"
+                
+                # Get file's creation date or modification date
+                try:
+                    stat_info = path.stat()
+                    # Use creation time on macOS (st_birthtime) or modification time as fallback
+                    if hasattr(stat_info, 'st_birthtime'):
+                        file_date = datetime.fromtimestamp(stat_info.st_birthtime)
+                    else:
+                        file_date = datetime.fromtimestamp(stat_info.st_mtime)
+                    
+                    date_prefix = file_date.strftime("%d%m%Y")
+                except Exception:
+                    # Fallback to today's date if we can't read file stats
+                    date_prefix = datetime.now().strftime("%d%m%Y")
+                
+                new_name = f"{date_prefix}_{old_name}"
                 new_path = path.parent / new_name
                 
                 type_label = "📄" if path.is_file() else "📁"
                 
                 preview_content += f"#{i} {type_label} {path.parent.name}/\n"
                 preview_content += f"  From: {old_name}\n"
-                preview_content += f"  To:   {new_name}\n\n"
+                preview_content += f"  To:   {new_name}\n"
+                preview_content += f"  Date: {date_prefix} ({file_date.strftime('%Y-%m-%d') if 'file_date' in locals() else 'today'})\n\n"
                 
                 self.rename_plan.append((path, new_path))
             

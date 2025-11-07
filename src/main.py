@@ -228,6 +228,7 @@ def create_session_manager(args: argparse.Namespace) -> SessionManager:
         'ISO_DATE': DateFormatStyle.ISO_DATE,
         'US_DATE': DateFormatStyle.US_DATE,
         'COMPACT': DateFormatStyle.COMPACT,
+        'DDMMYYYY': DateFormatStyle.DDMMYYYY,
         'YEAR_MONTH': DateFormatStyle.YEAR_MONTH
     }
     

@@ -218,6 +218,19 @@ class DateFormatStyle(Enum):
             DateFormatStyle.ISO_DATE: "2024-03-15",
             DateFormatStyle.US_DATE: "03-15-2024",
             DateFormatStyle.COMPACT: "20240315",
+            DateFormatStyle.DDMMYYYY: "15032024",
             DateFormatStyle.YEAR_MONTH: "2024-03"
         }
         return examples[self]
+    
+    @property
+    def description(self) -> str:
+        """Return a human-readable description of this format style."""
+        descriptions = {
+            DateFormatStyle.ISO_DATE: "ISO standard format (YYYY-MM-DD)",
+            DateFormatStyle.US_DATE: "US format (MM-DD-YYYY)",
+            DateFormatStyle.COMPACT: "Compact format (YYYYMMDD)",
+            DateFormatStyle.DDMMYYYY: "Day-first format (DDMMYYYY)",
+            DateFormatStyle.YEAR_MONTH: "Year and month only (YYYY-MM)"
+        }
+        return descriptions[self]
