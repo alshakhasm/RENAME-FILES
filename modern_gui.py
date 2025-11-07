@@ -246,8 +246,8 @@ class ModernDateRenamerGUI:
         self.preview_text.delete(1.0, tk.END)
         
         try:
-            # Get current date
-            today = datetime.now().strftime("%Y-%m-%d")
+            # Get current date in DDMMYYYY format
+            today = datetime.now().strftime("%d%m%Y")
             
             preview_content = f"BATCH RENAME PREVIEW\n{'=' * 50}\n\n"
             preview_content += f"Date prefix: {today}\n"

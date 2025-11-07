@@ -69,9 +69,9 @@ Examples:
     parser.add_argument(
         '--format', '-f',
         type=str,
-        choices=['ISO_DATE', 'US_DATE', 'COMPACT', 'YEAR_MONTH'],
-        default='ISO_DATE',
-        help='Date prefix format style (default: ISO_DATE = YYYY-MM-DD)'
+        choices=['ISO_DATE', 'US_DATE', 'COMPACT', 'DDMMYYYY', 'YEAR_MONTH'],
+        default='DDMMYYYY',
+        help='Date prefix format style (default: DDMMYYYY = DDMMYYYY)'
     )
     
     # Validation options

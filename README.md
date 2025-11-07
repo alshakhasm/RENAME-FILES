@@ -4,7 +4,7 @@ A desktop application that automatically renames files and folders by adding cre
 
 ## Features
 
-- **Automatic Date Prefixing**: Adds creation dates in YYYY-MM-DD_ format
+- **Automatic Date Prefixing**: Adds creation dates in DDMMYYYY_ format
 - **Drag-and-Drop Interface**: Simple GUI for directory selection
 - **Safe Operations**: Zero data loss, skips existing prefixes and symbolic links
 - **Cross-Platform**: Works on Windows, macOS, and Linux
@@ -68,9 +68,9 @@ documents/
 **After:**
 ```
 documents/
-├── 2024-03-15_report.pdf
-├── 2024-02-10_photos/
-└── 2024-01-05_project.zip
+├── 07112025_report.pdf
+├── 10022024_photos/
+└── 05012024_project.zip
 ```
 
 ## Usage
@@ -103,7 +103,7 @@ docker run -v /host/path:/data date-prefix-renamer cli /data/directory
 
 ❌ **Skipped:**
 - Files in subdirectories (only folders are renamed in subdirs)
-- Items already with YYYY-MM-DD_ prefixes
+- - Files already with DDMMYYYY_ prefixes
 - Symbolic links (for security)
 - Inaccessible files (permission errors)
 

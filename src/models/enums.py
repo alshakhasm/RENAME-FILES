@@ -183,14 +183,16 @@ class DateFormatStyle(Enum):
     Enumeration of supported date prefix formatting styles.
     
     Values:
-        ISO_DATE: YYYY-MM-DD format (default)
+        ISO_DATE: YYYY-MM-DD format
         US_DATE: MM-DD-YYYY format
         COMPACT: YYYYMMDD format (no separators)
+        DDMMYYYY: DDMMYYYY format (default)
         YEAR_MONTH: YYYY-MM format (day omitted)
     """
     ISO_DATE = "YYYY-MM-DD"
     US_DATE = "MM-DD-YYYY"
     COMPACT = "YYYYMMDD"
+    DDMMYYYY = "DDMMYYYY"
     YEAR_MONTH = "YYYY-MM"
     
     def __str__(self) -> str:
@@ -204,6 +206,7 @@ class DateFormatStyle(Enum):
             DateFormatStyle.ISO_DATE: "%Y-%m-%d",
             DateFormatStyle.US_DATE: "%m-%d-%Y",
             DateFormatStyle.COMPACT: "%Y%m%d",
+            DateFormatStyle.DDMMYYYY: "%d%m%Y",
             DateFormatStyle.YEAR_MONTH: "%Y-%m"
         }
         return format_mapping[self]

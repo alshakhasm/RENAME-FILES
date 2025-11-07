@@ -26,7 +26,7 @@ class FileSystemItem:
         modification_date: Last modification timestamp
         is_directory: Flag indicating if item is a directory
         is_symlink: Flag indicating if item is a symbolic link
-        has_date_prefix: Flag indicating if name already has YYYY-MM-DD_ prefix
+        has_date_prefix: Flag indicating if name already has DDMMYYYY_ prefix
         size_bytes: File size in bytes (0 for directories)
     """
     path: Path
@@ -65,7 +65,7 @@ class RenameOperation:
     Attributes:
         item: Reference to the FileSystemItem being renamed
         original_name: Original filename/directory name
-        target_name: New name with date prefix (YYYY-MM-DD_originalname)
+        target_name: New name with date prefix (DDMMYYYY_originalname)
         operation_type: Type of operation (FILE_RENAME, FOLDER_RENAME, SKIPPED)
         status: Current status of the operation
         error_message: Error details if operation failed
@@ -86,7 +86,12 @@ class RenameOperation:
         # Ensure target name has the expected prefix format
         if not self.target_name.startswith(self.original_name) and "_" in self.target_name:
             prefix = self.target_name.split("_")[0]
-            if len(prefix) == 10:  # YYYY-MM-DD format
+            if len(prefix) == 8:  # DDMMYYYY format (default)
+                try:
+                    datetime.strptime(prefix, "%d%m%Y")
+                except ValueError:
+                    raise ValueError(f"Invalid date prefix format: {prefix}")
+            elif len(prefix) == 10:  # YYYY-MM-DD format
                 try:
                     datetime.strptime(prefix, "%Y-%m-%d")
                 except ValueError:

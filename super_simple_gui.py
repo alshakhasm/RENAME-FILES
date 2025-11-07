@@ -103,8 +103,8 @@ class SimpleDateRenamerGUI:
         self.preview_text.delete(1.0, tk.END)
         
         try:
-            # Get current date
-            today = datetime.now().strftime("%Y-%m-%d")
+            # Get current date in DDMMYYYY format
+            today = datetime.now().strftime("%d%m%Y")
             
             if self.selected_path.is_file():
                 # Single file
