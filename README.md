@@ -31,8 +31,11 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Launch GUI application
-python basic_gui.py
+# Launch modern GUI (recommended)
+python3.11 modern_gui.py
+
+# Or launch simple GUI (fallback)
+python3.11 super_simple_gui.py
 ```
 
 ### CLI Interface
@@ -73,10 +76,14 @@ documents/
 ## Usage
 
 ### GUI Mode (Default)
-1. Launch the application
-2. Drag and drop a directory onto the interface
+1. Launch the modern GUI application (`python3.11 modern_gui.py`)
+2. Drag and drop files or directories onto the interface
 3. Review the preview of changes
-4. Click "Rename Files" to apply date prefixes
+4. Click "Execute" to apply date prefixes
+
+**Features:**
+- **Modern GUI**: Professional drag-and-drop interface with batch processing
+- **Simple GUI**: Basic three-step workflow (Select → Preview → Execute)
 
 ### CLI Mode
 ```bash
@@ -143,12 +150,17 @@ docker run --rm -v $(pwd)/test-data:/data date-prefix-renamer cli /data
 ## Architecture
 
 ```
-src/
-├── models/          # Data structures and entities
-├── core/            # Business logic (scanning, renaming)
-├── gui/             # Tkinter interface components
-├── utils/           # Validation and helper functions
-└── main.py          # Application entry point
+├── modern_gui.py        # Modern drag-and-drop GUI (recommended)
+├── super_simple_gui.py  # Simple fallback GUI
+├── src/                 # Core application logic
+│   ├── core/           # Business logic (scanning, renaming)
+│   ├── gui/            # Modular GUI components  
+│   ├── models/         # Data structures and entities
+│   ├── utils/          # Validation and helper functions
+│   └── main.py         # CLI entry point
+├── tests/              # Test framework
+├── docker/             # Container deployment
+└── specs/              # Project specifications
 ```
 
 ## Contributing
