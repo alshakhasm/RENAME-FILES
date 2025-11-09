@@ -3,6 +3,10 @@
 # Core dependencies
 tkinterdnd2>=0.3.0          # Enhanced drag-and-drop support for tkinter
 
+# Web interface dependencies
+Flask>=3.0.0                # Web framework
+Werkzeug>=3.0.0            # WSGI utilities
+
 # Development dependencies
 pytest>=7.0.0              # Testing framework
 pytest-mock>=3.10.0        # Mocking support for tests

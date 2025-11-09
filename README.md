@@ -47,13 +47,59 @@ python src/main.py /path/to/directory --dry-run
 
 ### Docker Usage
 
-```bash
-# GUI mode (with X11 forwarding)
-docker run -v /path/to/files:/data -e DISPLAY=$DISPLAY date-prefix-renamer
+#### GUI Mode with Docker (macOS)
 
-# CLI mode (headless)
-docker run -v /path/to/files:/data date-prefix-renamer cli /data/target-directory
+For macOS users with XQuartz:
+
+```bash
+# 1. Install XQuartz (if not already installed)
+brew install --cask xquartz
+
+# 2. Open XQuartz and enable network connections
+#    XQuartz > Preferences > Security > "Allow connections from network clients"
+#    Then restart XQuartz
+
+# 3. Allow connections from localhost
+xhost + 127.0.0.1
+
+# 4. Use docker-compose for easy launching
+docker-compose up
+
+# Your GUI window should appear!
 ```
+
+#### GUI Mode with Docker (Linux)
+
+```bash
+# 1. Allow Docker to access X11
+xhost +local:docker
+
+# 2. Launch with docker-compose
+docker-compose up
+
+# Or manually:
+docker run --rm -v /path/to/files:/data -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix date-prefix-renamer
+```
+
+#### CLI Mode with Docker (All Platforms)
+
+```bash
+# Using docker-compose
+docker-compose --profile cli up date-prefix-renamer-cli
+
+# Or manually
+docker run --rm -v /path/to/files:/data date-prefix-renamer cli /data/target-directory
+
+# With dry-run preview
+docker run --rm -v /path/to/files:/data date-prefix-renamer cli /data/directory --dry-run
+```
+
+#### Docker Configuration
+
+Edit `docker-compose.yml` to customize:
+- **Data directory**: Change `~/Documents:/data` to your preferred path
+- **Display settings**: Adjust `DISPLAY` environment variable if needed
+- **CLI target**: Modify the command in the `date-prefix-renamer-cli` service
 
 ## Example
 
@@ -128,16 +174,67 @@ python src/main.py --debug
 
 ## Docker Development
 
+### Building the Image
+
 ```bash
-# Build image
-docker build -t date-prefix-renamer .
+# Build with docker-compose
+docker-compose build
 
-# Test GUI mode (requires X11)
-docker run --rm -v $(pwd)/test-data:/data -e DISPLAY=$DISPLAY date-prefix-renamer
-
-# Test CLI mode
-docker run --rm -v $(pwd)/test-data:/data date-prefix-renamer cli /data
+# Or build manually
+docker build -f docker/Dockerfile -t date-prefix-renamer .
 ```
+
+### Testing GUI Mode
+
+**macOS with XQuartz:**
+```bash
+# Setup X11 forwarding
+xhost + 127.0.0.1
+
+# Launch with docker-compose
+docker-compose up
+
+# Cleanup when done
+docker-compose down
+```
+
+**Linux:**
+```bash
+# Allow X11 access
+xhost +local:docker
+
+# Launch
+docker-compose up
+```
+
+### Testing CLI Mode
+
+```bash
+# Create test data
+mkdir -p test-data
+touch test-data/sample.txt
+
+# Run CLI via docker-compose
+docker-compose --profile cli up date-prefix-renamer-cli
+
+# Or manually
+docker run --rm -v $(pwd)/test-data:/data date-prefix-renamer cli /data --dry-run
+```
+
+### Troubleshooting Docker GUI
+
+**"Cannot open display" error:**
+- macOS: Ensure XQuartz is running and `xhost + 127.0.0.1` was executed
+- Linux: Run `xhost +local:docker` and verify `$DISPLAY` is set
+
+**"Permission denied" error:**
+- Check that the mounted volume has proper read/write permissions
+- Try: `chmod -R 755 /path/to/your/data`
+
+**GUI window not appearing:**
+- Verify XQuartz "Allow connections from network clients" is enabled
+- Restart XQuartz after enabling the setting
+- Check that DISPLAY variable is correct: `echo $DISPLAY`
 
 ## Safety Features
 

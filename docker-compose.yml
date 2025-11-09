@@ -1,0 +1,90 @@
+services:
+  date-prefix-renamer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: date-prefix-renamer:latest
+    container_name: date-prefix-renamer
+    
+    # Web interface configuration
+    ports:
+      - "8080:8080"
+    
+    environment:
+      - LOG_LEVEL=INFO
+    
+    # Mount your data directory here
+    volumes:
+      - ~/Documents:/data:rw
+    
+    # Use the entrypoint default (web mode)
+    command: ["web"]
+
+  # Alternative: GUI mode with X11
+  date-prefix-renamer-gui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: date-prefix-renamer:latest
+    container_name: date-prefix-renamer-gui
+    
+    # GUI configuration for macOS (XQuartz)
+    environment:
+      - DISPLAY=192.168.0.118:0
+      - LOG_LEVEL=INFO
+    
+    # Mount your data directory here
+    volumes:
+      - ~/Documents:/data:rw
+      # For macOS with XQuartz, we need to share X11 socket
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    
+    # GUI needs interactive mode
+    stdin_open: true
+    tty: true
+    
+    # Use GUI mode
+    command: ["gui"]
+    
+    profiles: ["gui"]  # Only run when explicitly requested
+
+  # Alternative: CLI-only service
+  date-prefix-renamer-cli:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: date-prefix-renamer:latest
+    container_name: date-prefix-renamer-cli
+    
+    volumes:
+      - ~/Documents:/data:rw
+    
+    # Example CLI usage - modify the target directory as needed
+    command: ["cli", "/data/your-target-folder"]
+    
+    profiles: ["cli"]  # Only run when explicitly requested
+
+# Instructions:
+# 
+# Web Mode (Recommended):
+#   1. Run: docker-compose up
+#   2. Open browser: http://localhost:8080
+#   3. Drag and drop files to rename them!
+#
+# GUI Mode (macOS with XQuartz):
+#   1. Install XQuartz: brew install --cask xquartz
+#   2. Open XQuartz, go to Preferences > Security
+#   3. Enable "Allow connections from network clients"
+#   4. Restart XQuartz
+#   5. Run: xhost + 127.0.0.1
+#   6. Run: docker-compose --profile gui up date-prefix-renamer-gui
+#
+# CLI Mode:
+#   1. Edit the command in the 'date-prefix-renamer-cli' service
+#   2. Run: docker-compose --profile cli up date-prefix-renamer-cli
+#
+# Build only:
+#   docker-compose build
+#
+# Cleanup:
+#   docker-compose down

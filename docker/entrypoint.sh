@@ -42,13 +42,18 @@ validate_data_directory() {
 # Function to show usage
 show_usage() {
     echo "Usage:"
-    echo "  GUI mode:  docker run -v /host/path:/data -e DISPLAY=\$DISPLAY date-prefix-renamer"
+    echo "  Web mode:  docker run -v /host/path:/data -p 8080:8080 date-prefix-renamer"
+    echo "  GUI mode:  docker run -v /host/path:/data -e DISPLAY=\$DISPLAY date-prefix-renamer gui"
     echo "  CLI mode:  docker run -v /host/path:/data date-prefix-renamer cli [directory]"
     echo "  Help:      docker run date-prefix-renamer help"
     echo ""
     echo "Examples:"
+    echo "  # Web interface (Recommended)"
+    echo "  docker run -v ~/Documents:/data -p 8080:8080 date-prefix-renamer"
+    echo "  Then open: http://localhost:8080"
+    echo ""
     echo "  # GUI with X11 forwarding (Linux/macOS)"
-    echo "  docker run -v ~/Documents:/data -e DISPLAY=\$DISPLAY date-prefix-renamer"
+    echo "  docker run -v ~/Documents:/data -e DISPLAY=\$DISPLAY date-prefix-renamer gui"
     echo ""
     echo "  # CLI mode for headless environments"
     echo "  docker run -v ~/Documents:/data date-prefix-renamer cli /data/my-folder"
@@ -59,29 +64,28 @@ show_usage() {
 }
 
 # Parse command line arguments
-MODE="${1:-gui}"
+MODE="${1:-web}"
 TARGET_DIR="${2:-}"
 
 case "$MODE" in
+    "web")
+        echo "Starting in WEB mode..."
+        validate_data_directory
+        
+        echo "Launching web interface on http://0.0.0.0:8080"
+        echo "Access from your browser: http://localhost:8080"
+        cd /app
+        exec python web_app.py
+        ;;
+        
     "gui")
         echo "Starting in GUI mode..."
         validate_data_directory
         
-        if check_x11; then
-            echo "Launching GUI application..."
-            cd /app
-            echo "GUI mode not yet implemented. Use CLI mode: docker run ... cli /data/directory"
-            exit 1
-        else
-            echo ""
-            echo "GUI mode requires X11 forwarding. Please:"
-            echo "1. On Linux: xhost +local:docker && docker run -e DISPLAY=\$DISPLAY ..."
-            echo "2. On macOS: Install XQuartz and enable 'Allow connections from network clients'"
-            echo "3. On Windows: Use an X11 server like VcXsrv"
-            echo ""
-            echo "Alternatively, use CLI mode: docker run ... cli [directory]"
-            exit 1
-        fi
+        echo "Launching GUI application..."
+        echo "Note: GUI requires X11 forwarding to be configured on your host"
+        cd /app
+        exec python modern_gui.py
         ;;
         
     "cli")

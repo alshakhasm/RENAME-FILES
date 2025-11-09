@@ -24,6 +24,7 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y \
     python3-tk \
     x11-apps \
+    x11-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
@@ -37,6 +38,9 @@ COPY --from=builder /root/.local /home/renamer/.local
 
 # Copy application source
 COPY src/ ./src/
+COPY modern_gui.py .
+COPY web_app.py .
+COPY templates/ ./templates/
 COPY setup.py .
 COPY README.md* .
 
@@ -61,11 +65,14 @@ ENV DISPLAY=:0
 # Create mount point for data
 VOLUME ["/data"]
 
+# Expose web interface port
+EXPOSE 8080
+
 # Set default working directory for file operations
 WORKDIR /data
 
 # Use entrypoint script for mode detection
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Default to GUI mode
-CMD ["gui"]
+# Default to web mode
+CMD ["web"]
