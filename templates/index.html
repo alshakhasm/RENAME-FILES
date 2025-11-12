@@ -428,15 +428,19 @@
         }
 
         function displayPreview(preview, count) {
-            console.log('Displaying preview for', count, 'files');
+            console.log('Displaying preview for', count, 'items');
             fileCount.textContent = count;
             previewList.innerHTML = '';
 
             preview.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'preview-item';
+                
+                // Show folder icon for folders
+                const icon = item.type === 'folder' ? '📁' : '📄';
+                
                 div.innerHTML = `
-                    <div class="file-original">${escapeHtml(item.original)}</div>
+                    <div class="file-original">${icon} ${escapeHtml(item.original)}</div>
                     <div class="arrow">→</div>
                     <div class="file-new">${escapeHtml(item.new)}</div>
                     <div class="file-date">📅 ${item.date}</div>

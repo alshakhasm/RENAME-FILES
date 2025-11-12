@@ -40,24 +40,53 @@ def generate_preview(files):
     """Generate preview of rename operations"""
     preview = []
     
-    for file_info in files:
-        original_name = file_info['name']
-        file_path = file_info['path']
-        
-        # Get file date
-        file_date = get_file_date(file_path)
+    # Check if it's a folder upload
+    is_folder_upload = False
+    top_folder = None
+    if files:
+        first_path = files[0]['name']
+        path_parts = first_path.split(os.sep)
+        if len(path_parts) > 1:
+            is_folder_upload = True
+            top_folder = path_parts[0]
+    
+    if is_folder_upload and top_folder:
+        # For folder uploads, show only the folder rename
+        first_file_path = files[0]['path']
+        file_date = get_file_date(first_file_path)
         date_prefix = file_date.strftime("%d%m%Y")
-        
-        # Generate new name
-        new_name = f"{date_prefix}_{original_name}"
+        new_folder_name = f"{date_prefix}_{top_folder}"
         
         preview.append({
-            'original': original_name,
-            'new': new_name,
+            'original': top_folder,
+            'new': new_folder_name,
             'date': file_date.strftime('%Y-%m-%d'),
-            'path': file_path,
-            'size': os.path.getsize(file_path) if os.path.exists(file_path) else 0
+            'path': top_folder,
+            'size': 0,
+            'type': 'folder',
+            'file_count': len(files)
         })
+    else:
+        # For file uploads, show each file rename
+        for file_info in files:
+            original_name = file_info['name']
+            file_path = file_info['path']
+            
+            # Get file date
+            file_date = get_file_date(file_path)
+            date_prefix = file_date.strftime("%d%m%Y")
+            
+            # Generate new name
+            new_name = f"{date_prefix}_{original_name}"
+            
+            preview.append({
+                'original': original_name,
+                'new': new_name,
+                'date': file_date.strftime('%Y-%m-%d'),
+                'path': file_path,
+                'size': os.path.getsize(file_path) if os.path.exists(file_path) else 0,
+                'type': 'file'
+            })
     
     return preview
 
@@ -162,60 +191,92 @@ def execute_rename():
     results = []
     success_count = 0
     
-    for item in preview:
-        old_path = item['path']
-        old_name = item['original']
-        new_name = item['new']
-        
-        try:
-            # Get the relative path to preserve folder structure
-            if session_folder and old_path.startswith(session_folder):
-                rel_path = os.path.relpath(old_path, session_folder)
-                rel_dir = os.path.dirname(rel_path)
+    # Get the top-level folder name from the first file's path
+    if session_data['files']:
+        first_file_rel_path = session_data['files'][0]['name']
+        folder_parts = first_file_rel_path.split(os.sep)
+        if len(folder_parts) > 1:
+            # Files are in a folder structure
+            top_folder = folder_parts[0]
+            
+            # Get date from first file for the folder rename
+            first_item = preview[0]
+            file_date = datetime.strptime(first_item['date'], '%Y-%m-%d')
+            date_prefix = file_date.strftime("%d%m%Y")
+            new_folder_name = f"{date_prefix}_{top_folder}"
+            
+            # Move entire folder with new name
+            try:
+                source_folder = os.path.join(session_folder, top_folder)
+                dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], new_folder_name)
                 
-                # Determine final destination
-                if rel_dir and rel_dir != '.':
-                    # Keep folder structure
-                    final_dir = os.path.join(app.config['UPLOAD_FOLDER'], rel_dir)
+                # Create parent directory if needed
+                os.makedirs(os.path.dirname(dest_folder), exist_ok=True)
+                
+                # Move the folder
+                if os.path.exists(source_folder):
+                    import shutil as shutil_module
+                    shutil_module.move(source_folder, dest_folder)
+                    success_count = len(preview)
+                    
+                    results.append({
+                        'file': top_folder,
+                        'status': 'success',
+                        'new_name': new_folder_name
+                    })
+                    print(f"Renamed folder: {source_folder} -> {dest_folder}")
                 else:
-                    # Root level
-                    final_dir = app.config['UPLOAD_FOLDER']
-            else:
-                # Fallback to original directory
-                final_dir = os.path.dirname(old_path)
-            
-            # Create destination directory
-            os.makedirs(final_dir, exist_ok=True)
-            
-            new_path = os.path.join(final_dir, new_name)
-            
-            # Check if target exists
-            if os.path.exists(new_path):
+                    results.append({
+                        'file': top_folder,
+                        'status': 'error',
+                        'message': 'Source folder not found'
+                    })
+            except Exception as e:
+                print(f"Error renaming folder: {e}")
                 results.append({
-                    'file': old_name,
+                    'file': top_folder,
                     'status': 'error',
-                    'message': 'Target file already exists'
+                    'message': str(e)
                 })
-                continue
-            
-            # Rename
-            os.rename(old_path, new_path)
-            success_count += 1
-            
-            results.append({
-                'file': old_name,
-                'status': 'success',
-                'new_name': new_name
-            })
-            print(f"Renamed: {old_path} -> {new_path}")
-            
-        except Exception as e:
-            print(f"Error renaming {old_name}: {e}")
-            results.append({
-                'file': old_name,
-                'status': 'error',
-                'message': str(e)
-            })
+        else:
+            # FILE UPLOAD: Rename individual files and save to Documents
+            for item in preview:
+                old_path = item['path']
+                old_name = item['original']
+                new_name = item['new']
+                
+                try:
+                    # Save to Documents folder
+                    final_dir = app.config['UPLOAD_FOLDER']
+                    os.makedirs(final_dir, exist_ok=True)
+                    new_path = os.path.join(final_dir, new_name)
+                    
+                    if os.path.exists(new_path):
+                        results.append({
+                            'file': old_name,
+                            'status': 'error',
+                            'message': 'Target file already exists'
+                        })
+                        continue
+                    
+                    os.rename(old_path, new_path)
+                    success_count += 1
+                    
+                    results.append({
+                        'file': old_name,
+                        'status': 'success',
+                        'new_name': new_name,
+                        'type': 'file'
+                    })
+                    print(f"Renamed file: {old_path} -> {new_path}")
+                    
+                except Exception as e:
+                    print(f"Error renaming {old_name}: {e}")
+                    results.append({
+                        'file': old_name,
+                        'status': 'error',
+                        'message': str(e)
+                    })
     
     # Cleanup session and temp folder
     if session_folder and os.path.exists(session_folder):
