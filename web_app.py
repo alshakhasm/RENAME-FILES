@@ -9,11 +9,18 @@ import os
 from pathlib import Path
 from datetime import datetime
 import shutil
-import tempfile
+import uuid
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max
-app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
+
+# Use /data directory if available (Docker), otherwise use user's Documents
+base_dir = '/data' if os.path.exists('/data') else os.path.expanduser('~/Documents')
+app.config['UPLOAD_FOLDER'] = base_dir
+app.config['TEMP_UPLOAD_FOLDER'] = os.path.join(base_dir, '.uploads')
+
+# Create temp upload folder if it doesn't exist
+os.makedirs(app.config['TEMP_UPLOAD_FOLDER'], exist_ok=True)
 
 # Store session data
 sessions = {}
@@ -61,7 +68,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
-    """Handle file uploads"""
+    """Handle file uploads with folder structure support"""
     if 'files[]' not in request.files:
         return jsonify({'error': 'No files provided'}), 400
     
@@ -70,26 +77,53 @@ def upload_files():
     if not files or all(f.filename == '' for f in files):
         return jsonify({'error': 'No files selected'}), 400
     
+    # Create unique session upload folder
+    session_id = str(uuid.uuid4())
+    session_folder = os.path.join(app.config['TEMP_UPLOAD_FOLDER'], session_id)
+    os.makedirs(session_folder, exist_ok=True)
+    
     uploaded_files = []
     
     for file in files:
         if file.filename == '':
             continue
         
-        filename = secure_filename(file.filename)
-        if not filename:
-            continue
-            
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
         try:
+            # Use the full path from drag-drop to preserve folder structure
+            file_path_rel = file.filename
+            
+            # Secure each path component but keep structure
+            path_parts = []
+            for part in file_path_rel.split('/'):
+                if part:
+                    safe_part = secure_filename(part)
+                    if safe_part:
+                        path_parts.append(safe_part)
+            
+            if not path_parts:
+                continue
+            
+            # Reconstruct the relative path
+            safe_rel_path = os.path.join(*path_parts)
+            
+            # Save to session folder
+            filepath = os.path.join(session_folder, safe_rel_path)
+            
+            # Create subdirectories if needed
+            directory = os.path.dirname(filepath)
+            os.makedirs(directory, exist_ok=True)
+            
             file.save(filepath)
+            
+            # Store with relative path for display
             uploaded_files.append({
-                'name': filename,
+                'name': safe_rel_path,
                 'path': filepath
             })
+            print(f"Uploaded: {safe_rel_path} -> {filepath}")
+            
         except Exception as e:
-            print(f"Error saving {filename}: {e}")
+            print(f"Error saving {file.filename}: {e}")
             continue
     
     if not uploaded_files:
@@ -98,12 +132,14 @@ def upload_files():
     # Generate preview
     preview = generate_preview(uploaded_files)
     
-    # Store in session
-    session_id = str(hash(tuple(f['path'] for f in uploaded_files)))
+    # Store session data
     sessions[session_id] = {
         'preview': preview,
-        'files': uploaded_files
+        'files': uploaded_files,
+        'session_folder': session_folder
     }
+    
+    print(f"Session {session_id}: {len(uploaded_files)} files uploaded")
     
     return jsonify({
         'session_id': session_id,
@@ -122,6 +158,7 @@ def execute_rename():
     
     session_data = sessions[session_id]
     preview = session_data['preview']
+    session_folder = session_data.get('session_folder')
     results = []
     success_count = 0
     
@@ -131,9 +168,26 @@ def execute_rename():
         new_name = item['new']
         
         try:
-            # Get directory
-            directory = os.path.dirname(old_path)
-            new_path = os.path.join(directory, new_name)
+            # Get the relative path to preserve folder structure
+            if session_folder and old_path.startswith(session_folder):
+                rel_path = os.path.relpath(old_path, session_folder)
+                rel_dir = os.path.dirname(rel_path)
+                
+                # Determine final destination
+                if rel_dir and rel_dir != '.':
+                    # Keep folder structure
+                    final_dir = os.path.join(app.config['UPLOAD_FOLDER'], rel_dir)
+                else:
+                    # Root level
+                    final_dir = app.config['UPLOAD_FOLDER']
+            else:
+                # Fallback to original directory
+                final_dir = os.path.dirname(old_path)
+            
+            # Create destination directory
+            os.makedirs(final_dir, exist_ok=True)
+            
+            new_path = os.path.join(final_dir, new_name)
             
             # Check if target exists
             if os.path.exists(new_path):
@@ -153,16 +207,26 @@ def execute_rename():
                 'status': 'success',
                 'new_name': new_name
             })
+            print(f"Renamed: {old_path} -> {new_path}")
             
         except Exception as e:
+            print(f"Error renaming {old_name}: {e}")
             results.append({
                 'file': old_name,
                 'status': 'error',
                 'message': str(e)
             })
     
-    # Cleanup session
-    del sessions[session_id]
+    # Cleanup session and temp folder
+    if session_folder and os.path.exists(session_folder):
+        try:
+            shutil.rmtree(session_folder)
+            print(f"Cleaned up session folder: {session_folder}")
+        except Exception as e:
+            print(f"Error cleaning up {session_folder}: {e}")
+    
+    if session_id in sessions:
+        del sessions[session_id]
     
     return jsonify({
         'success': success_count,

@@ -82,6 +82,27 @@
             display: none;
         }
 
+        #folderInput {
+            display: none;
+        }
+
+        .btn-upload {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-upload:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
         .preview-section {
             display: none;
             margin-top: 30px;
@@ -258,13 +279,22 @@
         <h1>📁 Date Prefix Renamer</h1>
         <p class="subtitle">Add date prefixes to your files automatically</p>
 
-        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-area" id="uploadArea">
             <div class="upload-icon">📤</div>
             <div class="upload-text">Click to select files or drag & drop</div>
-            <div class="upload-hint">Select multiple files to rename • Max 500MB total</div>
+            <div class="upload-hint">Select multiple files or folders • Max 500MB total</div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn-upload" onclick="document.getElementById('fileInput').click()">
+                    📄 Select Files
+                </button>
+                <button type="button" class="btn-upload" onclick="document.getElementById('folderInput').click()">
+                    📁 Select Folder
+                </button>
+            </div>
         </div>
 
         <input type="file" id="fileInput" multiple accept="*/*">
+        <input type="file" id="folderInput" multiple webkitdirectory directory>
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
@@ -294,6 +324,7 @@
 
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
+        const folderInput = document.getElementById('folderInput');
         const loading = document.getElementById('loading');
         const previewSection = document.getElementById('previewSection');
         const previewList = document.getElementById('previewList');
@@ -315,7 +346,24 @@
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             
-            const files = e.dataTransfer.files;
+            // Handle both files and folders
+            const items = e.dataTransfer.items;
+            const files = [];
+            
+            if (items) {
+                for (let item of items) {
+                    if (item.kind === 'file') {
+                        const file = item.getAsFile();
+                        if (file) files.push(file);
+                    }
+                }
+            } else {
+                const dtFiles = e.dataTransfer.files;
+                for (let i = 0; i < dtFiles.length; i++) {
+                    files.push(dtFiles[i]);
+                }
+            }
+            
             if (files.length > 0) {
                 handleFiles(files);
             }
@@ -323,6 +371,13 @@
 
         // File input handler
         fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+
+        // Folder input handler
+        folderInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 handleFiles(e.target.files);
             }
