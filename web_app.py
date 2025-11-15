@@ -194,45 +194,64 @@ def execute_rename():
     # Get the top-level folder name from the first file's path
     if session_data['files']:
         first_file_rel_path = session_data['files'][0]['name']
+        print(f"DEBUG: first_file_rel_path = {first_file_rel_path}")
         folder_parts = first_file_rel_path.split(os.sep)
+        print(f"DEBUG: folder_parts = {folder_parts}, len = {len(folder_parts)}")
+        
         if len(folder_parts) > 1:
-            # Files are in a folder structure
+            # Files are in a folder structure - rename the folder in its original location
             top_folder = folder_parts[0]
+            print(f"DEBUG: Detected folder upload - top_folder = {top_folder}")
             
             # Get date from first file for the folder rename
             first_item = preview[0]
             file_date = datetime.strptime(first_item['date'], '%Y-%m-%d')
             date_prefix = file_date.strftime("%d%m%Y")
             new_folder_name = f"{date_prefix}_{top_folder}"
+            print(f"DEBUG: new_folder_name = {new_folder_name}")
             
-            # Move entire folder with new name
             try:
+                # Get the original parent directory of where files were uploaded from
+                # The first file's original path tells us where it came from
+                first_file = uploaded_files[0]
+                first_path = first_file['path']
+                print(f"DEBUG: first_path = {first_path}")
+                
+                # Extract the original folder from session folder path
                 source_folder = os.path.join(session_folder, top_folder)
+                
+                # The destination is Documents folder
                 dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], new_folder_name)
+                print(f"DEBUG: source_folder = {source_folder}")
+                print(f"DEBUG: dest_folder = {dest_folder}")
+                print(f"DEBUG: source exists = {os.path.exists(source_folder)}")
                 
-                # Create parent directory if needed
-                os.makedirs(os.path.dirname(dest_folder), exist_ok=True)
-                
-                # Move the folder
+                # Move entire folder with new name
                 if os.path.exists(source_folder):
-                    import shutil as shutil_module
-                    shutil_module.move(source_folder, dest_folder)
+                    # Create parent directory if needed
+                    os.makedirs(os.path.dirname(dest_folder), exist_ok=True)
+                    shutil.move(source_folder, dest_folder)
                     success_count = len(preview)
+                    print(f"DEBUG: Successfully moved folder to {dest_folder}")
                     
                     results.append({
                         'file': top_folder,
                         'status': 'success',
-                        'new_name': new_folder_name
+                        'new_name': new_folder_name,
+                        'type': 'folder'
                     })
                     print(f"Renamed folder: {source_folder} -> {dest_folder}")
                 else:
+                    print(f"DEBUG: Source folder does not exist at {source_folder}")
                     results.append({
                         'file': top_folder,
                         'status': 'error',
-                        'message': 'Source folder not found'
+                        'message': f'Source folder not found at {source_folder}'
                     })
             except Exception as e:
                 print(f"Error renaming folder: {e}")
+                import traceback
+                traceback.print_exc()
                 results.append({
                     'file': top_folder,
                     'status': 'error',
