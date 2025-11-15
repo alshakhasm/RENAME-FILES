@@ -76,47 +76,89 @@ def watch_folder(watch_path: str, recursive: bool = False) -> None:
     print(f"🔄 Recursive: {recursive}")
     print("💡 Drag and drop items here. Press Ctrl+C to stop.\n")
     
-    seen_items = set()
-    
+    # Try to use watchdog if available, otherwise fall back to polling
     try:
-        while True:
-            # Get current items in watch folder
-            if recursive:
-                current_items = set()
-                for root, dirs, files in os.walk(watch_path):
-                    for d in dirs:
-                        current_items.add(os.path.join(root, d))
-                    for f in files:
-                        current_items.add(os.path.join(root, f))
-            else:
-                current_items = set(
-                    os.path.join(watch_path, item) 
-                    for item in os.listdir(watch_path)
-                    if os.path.join(watch_path, item) != watch_path
-                )
+        from watchdog.observers import Observer
+        from watchdog.events import FileSystemEventHandler
+        
+        class DropHandler(FileSystemEventHandler):
+            def on_created(self, event):
+                # Wait for file/folder to be fully written
+                time.sleep(1)
+                if os.path.exists(event.src_path):
+                    if not os.path.basename(event.src_path).startswith('.'):
+                        rename_item_in_place(event.src_path)
             
-            # Find new items
-            new_items = current_items - seen_items
-            
-            for item_path in new_items:
-                # Skip hidden files and system files
-                if os.path.basename(item_path).startswith('.'):
-                    seen_items.add(item_path)
-                    continue
-                
-                # Give the file system time to finish writing
-                time.sleep(0.5)
-                
-                if os.path.exists(item_path):
-                    rename_item_in_place(item_path)
-                
-                seen_items.add(item_path)
-            
-            time.sleep(1)
+            def on_moved(self, event):
+                # Handle drag-drop which may generate move events
+                time.sleep(1)
+                if os.path.exists(event.dest_path):
+                    if not os.path.basename(event.dest_path).startswith('.'):
+                        rename_item_in_place(event.dest_path)
+        
+        observer = Observer()
+        observer.schedule(DropHandler(), watch_path, recursive=recursive)
+        observer.start()
+        
+        print("✨ Using watchdog for instant detection\n")
+        
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\n\n👋 Stopped watching.")
+            observer.stop()
+            observer.join()
+            sys.exit(0)
     
-    except KeyboardInterrupt:
-        print("\n\n👋 Stopped watching.")
-        sys.exit(0)
+    except ImportError:
+        # Fallback to polling if watchdog not available
+        print("⚠️  watchdog not installed, using polling (slower)\n")
+        print("💡 To install: pip install watchdog\n")
+        
+        seen_items = set()
+        
+        try:
+            while True:
+                # Get current items in watch folder
+                try:
+                    if recursive:
+                        current_items = set()
+                        for root, dirs, files in os.walk(watch_path):
+                            for d in dirs:
+                                item_path = os.path.join(root, d)
+                                if not os.path.basename(item_path).startswith('.'):
+                                    current_items.add(item_path)
+                            for f in files:
+                                item_path = os.path.join(root, f)
+                                if not os.path.basename(item_path).startswith('.'):
+                                    current_items.add(item_path)
+                    else:
+                        current_items = set()
+                        for item in os.listdir(watch_path):
+                            if not item.startswith('.'):
+                                item_path = os.path.join(watch_path, item)
+                                current_items.add(item_path)
+                except OSError:
+                    current_items = set()
+                
+                # Find new items
+                new_items = current_items - seen_items
+                
+                for item_path in sorted(new_items):
+                    # Give the file system time to finish writing
+                    time.sleep(0.5)
+                    
+                    if os.path.exists(item_path):
+                        rename_item_in_place(item_path)
+                    
+                    seen_items.add(item_path)
+                
+                time.sleep(0.5)
+        
+        except KeyboardInterrupt:
+            print("\n\n👋 Stopped watching.")
+            sys.exit(0)
 
 def process_single_item(item_path: str) -> None:
     """Process a single file or folder"""
